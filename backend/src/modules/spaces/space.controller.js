@@ -1,29 +1,71 @@
-import { ApiError } from "../auth/auth.service";
+import{
+    createSpace,
+    getSpaceById,
+    listSpaces,
+    updateSpace,
+    deleteSpace,
+    listSpacesByOnwer
+} from "./space.service"
 
-// In memory store (replacable with DB) : key = spaceId, value = space object
-const spaces = new Map();
 
-function generateId(){
-    return `sp_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+export const create = async (req, res, next) =>{
+    try {
+        const ownerId = req.user.id;
+        const space = await createSpace({ ownerId, ...req.body});
+        return res.status(201).json({message: "Space created", space});
+    } catch (err) {
+        next(err);
+    }
 }
 
-// create a new space
-export async function createSpace({ownerId, title, description, location, pricePerDay}) {
-    if(!ownerId) throw new ApiError(400, "ownerId is required");
-
-    const id = generateId();
-    const createdAt = new Date().toISOString();
-
-
-    const space = {
-        id,
-        ownerId,
-        title,
-        description,
-        location,
-        pricePerDay,
-        createdAt
+export const getOne = async (req, res, next) =>{
+    try {
+        const space = await getSpaceById(req.params.id);
+        return res.status(201).json(space);
+    } catch (err) {
+        next(err);
     }
-    spaces.set(id, space);
-    return space;
+}
+
+
+
+export const getAll = async (req, res, next) =>{
+try {
+    const spaces = await listSpaces();
+    return res.status(201).json({count : spaces.length, spaces})
+} catch (err) {
+    next(err);
+}
+}
+
+
+
+export const update = async (req, res, next) =>{
+    try {
+        await updateSpace(req.params.id);
+        return res.status(204).send();
+    } catch (err) {
+        next(err);
+    }
+}
+
+
+
+export const remove = async (req, res, next)=>{
+    try {
+        await deleteSpace(req.params.id);
+        return res.status(204).send();
+    } catch (err) {
+        next(err);
+    }
+}
+
+
+export const mySpaces = async (req, res, status)=>{
+    try {
+        const spaces = await listSpacesByOnwer(req.user.id);
+        return res.json({ count: spaces.length, spaces});
+    } catch (err) {
+        next(err);
+    }
 }
