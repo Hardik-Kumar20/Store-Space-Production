@@ -7,7 +7,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const env = require("../../config/env");
 
-const users = new Map(); // in-memory user store as: key = email, value = user object
+export const users = new Map(); // in-memory user store as: key = email, value = user object
 
 const JWT_SECRET = env.JWT_ACCESS_SECRET;
 const JWT_EXPIRES_IN = env.JWT_EXPIRING_TIME;
