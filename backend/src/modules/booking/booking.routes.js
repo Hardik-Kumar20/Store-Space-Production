@@ -10,6 +10,7 @@ import{
 } from "./booking.controller";
 
 import {authMiddleware} from "../../middlewares/auth.middleware"
+import { requireRole } from "../../middlewares/role.middleware";
 // What does authMiddleware do written above --->
 // i.   Checks if the user is logged in
 // ii.  Validates the JWT token
@@ -21,13 +22,13 @@ const router = express.Router();
 
 
 
-router.post("/", authMiddleware, create);
+router.post("/", authMiddleware, requireRole("USER"), create);
 
 
 router.get("/", getAll);
 
 
-router.get("/:id", getOne);
+router.get("/:id", requireRole("USER"), getOne);
 
 
 router.put("/:id", authMiddleware, update);

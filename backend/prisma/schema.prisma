@@ -1,0 +1,139 @@
+generator client {
+    provider = "prisma-client-js"
+    output = ".generated"
+}
+
+datasource db{
+    provider = "postgresql"
+}
+
+
+/////////// User & Auth /////////
+
+model User {
+    id          String   @id @default(uuid())
+    name        String
+    email       String   @unique
+    password    String
+    role        Role     @default(USER)
+    isActive    Boolean  @default(true)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+
+    spaces      Space[]
+    bookings    Booking[]
+    payments    Payment[]
+}
+
+
+
+
+/* =========================
+   SPACES (created by owners)
+========================= */
+
+
+model Space{
+    id          String      @id @default(uuid())
+    title       String      
+    decription  String
+    address     String
+    city        String
+    pricePerDay Int
+    isAvailable Boolean     @default(true)
+    createdAt   DateTime    @default(now())
+    updatedAt   DateTime    @updatedAt
+
+    ownerId     String 
+    owner       User        @relation(fields: [ownerId], references: [id])
+
+    bookings    Booking[]
+}
+
+
+
+
+
+/* =========================
+   BOOKINGS (CRUD)
+========================= */
+
+model Booking{
+    id          String      @id @default(uuid())
+    fromDate    DateTime
+    toDate      DateTime
+    status      BookingStatus   @default(PENDING)
+    createdAt   DateTime        @default(now())
+    updatedAt   DateTime        @updatedAt
+
+
+    userId      String
+    spaceId     String
+    
+    user    User    @relation(fields: [userId], references: [id])
+    space   Space   @relation(fields: [spaceId], references: [id])
+
+    payment Payment?
+}
+
+
+
+
+
+
+/* =========================
+   PAYMENTS
+========================= */
+
+model Payment{
+    id              String      @id @default(uuid())
+    bookingId       String      @unique
+    userId          String      
+    amount          Int
+    currency        String      @default("INR")
+    provider        PaymentProvider
+    providerOrderId String
+    providerPayId   String?
+    status          PaymentStatus @default(PENDING)
+    createdAt       DateTime @default(now())
+
+    booking Booking @relation(fields: [bookingId], references: [id])
+    user    User    @relation(fields: [userId], references: [id])
+}
+
+
+
+
+
+
+
+
+
+
+
+/* =========================
+   ENUMS
+========================= */
+
+enum Role{
+    USER
+    OWNER
+    ADMIN
+}
+
+enum BookingStatus{
+    PENDING
+    CONFIRMED
+    CANCELED
+}
+
+enum PaymentStatus{
+    PENDING
+    SUCCESS
+    FAILED
+}
+
+enum PaymentProvider{
+    RAZORPAY
+}

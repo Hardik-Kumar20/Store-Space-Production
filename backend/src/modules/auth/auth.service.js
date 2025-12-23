@@ -7,7 +7,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const env = require("../../config/env");
 
-export const users = new Map(); // in-memory user store as: key = email, value = user object
+import prisma from '../../db/prisma'
 
 const JWT_SECRET = env.JWT_ACCESS_SECRET;
 const JWT_EXPIRES_IN = env.JWT_EXPIRING_TIME;
@@ -32,14 +32,13 @@ export async function register({email, password, name}) {
 
     const hashed = await bcrypt.hash(password, SALT_ROUNDS);
     const createdAt = new Date().toISOString();
-    const user = {
+    const user = await prisma.user.create({
         id: `u_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         email: normalizedEmail,
         name: name || "",
         password: hashed,
         createdAt,
-    };
-    users.set(normalizedEmail, user);
+    });
 
     const{password: _, ...safe} = user;
     return safe;
@@ -53,8 +52,9 @@ export async function register({email, password, name}) {
 // Login
 
 export async function login({email, password}) {
-    const normalizedEmail = email.toLowerCase();
-    const user = users.get(normalizedEmail);
+    const user = await prisma.user.findUnique({
+        where: {email: email.toLowerCase()}
+    });
     if(!user){
         throw new ApiError(401, "Invalid credentials");
     }
@@ -64,7 +64,7 @@ export async function login({email, password}) {
         throw new ApiError(401, "Invalid credentials");
     }
 
-    const token = jwt.sign({sub: user.id, email: user.email}, JWT_SECRET, {expiresIn: JWT_EXPIRES_IN});
+    const token = jwt.sign({sub: user.id, email: user.email, role: user.role}, JWT_SECRET, {expiresIn: JWT_EXPIRES_IN});
     const{ password:_, ...safe} = user;
     return {token, user: safe};
 }
@@ -76,23 +76,19 @@ export async function login({email, password}) {
 // find user by id 
 
 export async function findById(id) {
-    for(const u of users.values()){
-        if(u.id === id){
-            const{passwod:_, ...safe} = u;
-            return safe;
-        }
-    }
-    return null;
+    return prisma.user.findUnique({
+        where: {id},
+        select: { password: flase }
+    });
 }
 
 
 // find by email
 export async function findByEmail(email) {
-    if(!email) return null;
-    const u = users.get(email.toLowerCase);
-    if(!u) return null;
-    const{password: _, ...safe} = u;
-    return safe;
+    return prisma.user.findUnique({
+        where : {email: email.toLowerCase()},
+        select: { password : false }
+    })
 }
 
 
